@@ -39,7 +39,7 @@ public interface SWBScriptEngine
     /**
      *
      */
-    public void chechUpdates();
+    public boolean chechUpdates();
 
     /**
      *

@@ -552,6 +552,12 @@ public class DataStoreMongo implements SWBDataStore
             if((val!=null && val.equals(oobj.get(key))) || (val==null && oobj.get(key)==null))it.remove();
         }
     }       
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize(); //To change body of generated methods, choose Tools | Templates.
+        close();
+    }        
     
     /**
      *
@@ -686,5 +692,68 @@ public class DataStoreMongo implements SWBDataStore
     @Override
     public boolean existModel(String modelid) {
         return mongoClient.getDatabaseNames().contains(modelid);
+    }
+
+    @Override
+    public boolean createIndex(String name, DataObject index, SWBDataSource dataSource) throws IOException {
+        BasicDBObject json=toBasicDBObject(index);
+        boolean create=true;
+        try
+        {
+            String modelid=dataSource.getModelId();
+            String scls=dataSource.getClassName();
+            DB db = mongoClient.getDB(modelid);
+            DBCollection coll = db.getCollection(scls);
+            
+            //System.out.println("name:"+name);
+            //System.out.println("index:"+index);
+            
+            List<DBObject> list=coll.getIndexInfo();
+            Iterator<DBObject> it=list.iterator();
+            while (it.hasNext()) {
+                DataObject obj = toDataObject((BasicDBObject)it.next());
+                //System.out.println("obj:"+obj);
+                if(obj.getString("name").equals(name))
+                {
+                    if(obj.getDataObject("key").equals(index))
+                    {
+                        create=false;
+                    }else
+                    {
+                        dropIndex(name, dataSource);
+                    }
+                    break;
+                }
+            }
+            
+            if(create)
+            {
+                System.out.println("createIndex:"+name+"->"+index);
+                coll.createIndex(json, name);
+            }else
+            {
+                System.out.println("findIndex:"+name+"->"+index);
+            }
+        }finally
+        {
+//            mongoClient.close();
+        }       
+        return create;
+    }
+
+    @Override
+    public void dropIndex(String name, SWBDataSource dataSource) throws IOException {
+        try
+        {
+            String modelid=dataSource.getModelId();
+            String scls=dataSource.getClassName();
+            DB db = mongoClient.getDB(modelid);
+            DBCollection coll = db.getCollection(scls);            
+            System.out.println("dropIndex:"+name);
+            coll.dropIndex(name);      
+        }finally
+        {
+//            mongoClient.close();
+        }           
     }
 }

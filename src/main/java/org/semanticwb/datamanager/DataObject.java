@@ -64,6 +64,24 @@ public class DataObject extends LinkedHashMap<String, Object>
     /**
      *
      * @param key
+     * @return
+     */
+    public DataObject getOrCreateDataObject(String key) {
+        Object obj = get(key);
+        if(obj==null)
+        {
+            obj=new DataObject();
+            put(key, obj);
+            return (DataObject)obj;
+        }else if (obj instanceof DataObject) {
+            return (DataObject) obj;
+        }
+        return null;
+    }    
+    
+    /**
+     *
+     * @param key
      * @param def
      * @return
      */
@@ -74,6 +92,7 @@ public class DataObject extends LinkedHashMap<String, Object>
         }
         return def;
     }    
+    
 
     /**
      *
@@ -87,6 +106,25 @@ public class DataObject extends LinkedHashMap<String, Object>
         }
         return null;
     }
+    
+    /**
+     *
+     * @param key
+     * @return
+     */
+    public DataList getOrCreateDataList(String key) {
+        Object obj = get(key);
+        if(obj==null)
+        {
+            obj=new DataList();
+            put(key, obj);
+            return (DataList)obj;            
+        }
+        if (obj instanceof DataList) {
+            return (DataList) obj;
+        }
+        return null;
+    }    
 
     /**
      *
@@ -736,6 +774,87 @@ public class DataObject extends LinkedHashMap<String, Object>
             }
         }        
         return ret;
+    }
+    
+    /**
+     * Return a DataObject with the difference of data
+     * @param data
+     * @return new DataObject with the difference
+     */
+    public DataObject difference(DataObject data)
+    {
+        DataObject dif=new DataObject();
+        for(Map.Entry<String,Object> entry:data.entrySet())
+        {
+            String key=entry.getKey();
+            Object obj=entry.getValue();
+            if(obj instanceof DataObject)
+            {
+                DataObject nold=this.getDataObject(key);
+                if(nold==null)nold=this.addSubObject(key);
+                DataObject ndif=nold.difference((DataObject)obj);
+                if(!ndif.isEmpty())
+                {                        
+                    dif.addParam(key, ndif);
+                }
+            }else if(obj instanceof DataList)
+            {
+                //ret.addParam(key, ((DataList)obj).cloneDataList());
+            }else
+            {
+                Object ov=this.get(key);
+                Object nv=data.get(key);
+
+                if(nv!=null && !nv.equals(ov))
+                {
+                    this.addParam(key, nv);
+                    dif.addParam(key, nv);                    
+                }                
+            }            
+        }
+        return dif;
+    } 
+    
+    /**
+     * Check if data if cointained in the dataobject
+     * @param data
+     * @return true is contained
+     */
+    public boolean contains(DataObject data)
+    {
+        DataObject dif=new DataObject();
+        for(Map.Entry<String,Object> entry:data.entrySet())
+        {
+            String key=entry.getKey();
+            Object nobj=entry.getValue();
+            Object oobj=this.get(key);
+                    
+            if(oobj instanceof DataObject)
+            {
+                if(!(nobj instanceof DataObject))return false;
+                if(!((DataObject) oobj).equals((DataObject)nobj))return false;
+            }else if(oobj instanceof DataList)
+            {
+                //TODO:
+            }else
+            {
+                if((nobj!=null && !nobj.equals(oobj)) || (nobj==null && oobj!=null))
+                {
+                    return false;                
+                }                
+            }            
+        }
+        return true;
+    }  
+    
+    /**
+     * Compare two DataObjects
+     * @param data
+     * @return true is are equals
+     */
+    public boolean equals(DataObject data)
+    {
+        return this.contains(data) && data.contains(this);
     }
 
 }

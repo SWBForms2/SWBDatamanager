@@ -75,13 +75,14 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
 
     private SWBBaseScriptEngine(String source)
     {        
-        this.source=source;
+        this(source, false);
     }    
     
     private SWBBaseScriptEngine(String source, boolean internalSource)
     {
         this.source=source;
         this.internalSource=internalSource;
+        utils=new SWBScriptUtils(this);
     }
     
     private void init()
@@ -89,9 +90,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
         logger.log(Level.INFO,"Initializing ScriptEngine: "+source);
         try
         {
-            utils=new SWBScriptUtils(this);
-            lastCheck=System.currentTimeMillis();  
-            id=lastCheck;
+            needsReload=false;
+            closed=false;            
             
             ArrayList<String> sources=new ArrayList();
             if(!source.equals("[GLOBAL]"))
@@ -156,17 +156,14 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
 //            }
             
             ScriptObject eng=new ScriptObject(engine.get("eng"));
-            sobject=eng;
             
             //Load Routes
             ScriptObject ros = eng.get("routes");
             RoutesMgr.parseRouter(ros);
               
             //Load DataStores
+            HashMap<String,SWBDataStore> dataStores=new HashMap();          
             {
-                HashMap<String,SWBDataStore> dataStores=new HashMap();
-                this.sengine=engine;
-                this.dataStores=dataStores;            
                 ScriptObject dss=eng.get("dataStores");   
                 Iterator<String> it=dss.keySet().iterator();
                 while (it.hasNext()) {
@@ -184,9 +181,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             }            
             
             //Load DataSources
+            HashMap<String,ScriptObject> dataSources=new HashMap();
             {
-                HashMap<String,ScriptObject> dataSources=new HashMap();
-                this.dataSources=dataSources;            
                 ScriptObject dss=eng.get("dataSources");   
                 Iterator<String> it=dss.keySet().iterator();
                 while (it.hasNext()) {
@@ -198,9 +194,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             }
             
             //Load DataProcessors
+            HashMap<String,Set<SWBDataProcessor>> dataProcessors=new HashMap();          
             {
-                HashMap<String,Set<SWBDataProcessor>> dataProcessors=new HashMap();
-                this.dataProcessors=dataProcessors;            
                 ScriptObject dss=eng.get("dataProcessors");   
                 Iterator<String> it=dss.keySet().iterator();
                 while(it.hasNext())
@@ -254,9 +249,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             }            
             
             //Load DataServices
+            HashMap<String,Set<SWBDataService>> dataServices=new HashMap();         
             {
-                HashMap<String,Set<SWBDataService>> dataServices=new HashMap();
-                this.dataServices=dataServices;            
                 ScriptObject dss=eng.get("dataServices");   
                 Iterator<String> it=dss.keySet().iterator();
                 while(it.hasNext())
@@ -309,11 +303,9 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             }            
             
             //Load DataExtractors
+            dataExtractorsStop();              
+            HashMap<String,DataExtractorBase> dataExtractors=new HashMap();
             {
-                dataExtractorsStop();  
-            
-                HashMap<String,DataExtractorBase> dataExtractors=new HashMap();
-                this.dataExtractors=dataExtractors;
                 ScriptObject ext=eng.get("dataExtractors");   
                 logger.log(Level.INFO,"Loading Extractors");
                 Iterator<String> it=ext.keySet().iterator();
@@ -340,8 +332,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
 //                System.out.println("Loading UserRepository");
 //                userRep=new SWBUserRepository(ur, this);
 //            } 
+
+
+            HashMap<String, SWBFileSource> fileSources = new HashMap();
             {
-                this.fileSources = new HashMap<>();
                 ScriptObject dss=eng.get("fileSources");
                 Iterator<String> it=dss.keySet().iterator();
                 while (it.hasNext()) {
@@ -365,11 +359,47 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 }
             }
             
+            this.sobject=eng;      
+            this.sengine=engine;
+            this.dataStores=dataStores;              
+            this.dataSources=dataSources;     
+            this.dataProcessors=dataProcessors;  
+            this.dataServices=dataServices;   
+            this.dataExtractors=dataExtractors;
+            this.fileSources=fileSources;
+            
+            lastCheck=System.currentTimeMillis();  
+            id=lastCheck;      
+            
+            //Load DataSourceIndexes
+            {
+                ScriptObject dss=eng.get("dataSourceIndexes");   
+                Iterator<String> it=dss.keySet().iterator();
+                while (it.hasNext()) {
+                    String key = it.next();
+                    try
+                    {
+                        logger.log(Level.INFO,"Loading DataSourceIndex:"+key);                    
+                        DataObject data=dss.get(key).toDataObject();
+                        String scriptEng=data.getString("scriptEngine");                            
+                        if(scriptEng==null || source.equals(scriptEng))
+                        {
+                            //{"dataSource":"User", "index":{"email":1, "birthday":-1, "fullname":"text"}}    
+                            DataObject index=data.getDataObject("index");
+                            if(index.size()>0)getDataSource(data.getString("dataSource")).createIndex(key, index);
+                        }
+                    }catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }              
+            
             //loadProcesses
             if(source.equals("/admin/ds/admin.js"))
             {
                 processMgr=ProcessMgr.createInstance(this);
-            }
+            }            
             
             dataExtractorsStart();         
             
@@ -632,21 +662,6 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
         try
         {
             close();
-            
-            dataSources.clear();
-            fileSources.clear();
-            dataExtractors.clear();
-            dataServices.clear();
-            dataProcessors.clear();
-            
-            sengine=null;
-            sobject=null;
-    
-            files.clear();
-            needsReload=false;
-            closed=false;
-            utils=null;        
-            
             init();
         }catch(Exception e)
         {
@@ -684,6 +699,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     public void needsReloadScriptEngine()
     {
         this.needsReload=true;
+        lastCheck=System.currentTimeMillis();;        
     }
     
     /**
@@ -757,8 +773,9 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      *
      */
     @Override
-    public void chechUpdates()
+    public boolean chechUpdates()
     {        
+        boolean ret=false;
         {
             long time=System.currentTimeMillis();
             if((time-lastCheck)>10000)
@@ -771,8 +788,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                         if(needsReload)
                         {
                             needsReload=false;
-                            logger.log(Level.INFO,"remove ScriptEngine:"+source);
-                            reloadScriptEngine();
+                            Thread t=new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    logger.log(Level.INFO,"reload ScriptEngine:"+source);
+                                    reloadScriptEngine();
+                                }
+                            });
+                            t.start();
+                            ret=true;
                         }
                     }
                 }                
@@ -784,6 +808,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 }
             }
         }
+        return ret;
     }
     
     /**
@@ -851,14 +876,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 {
                     closed=true;
                     dataExtractorsStop();
-                    
+                    //TODO: se movio el close al finalize del datastore
+                    /*
                     //DataStores..
                     Iterator<SWBDataStore> it=dataStores.values().iterator();
                     while (it.hasNext()) {
                         SWBDataStore next = it.next();
                         next.close();
                     }
-                    
+                    */
                     logger.log(Level.INFO,"Closed ScriptEngine: "+source);
                 }
             }

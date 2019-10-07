@@ -57,8 +57,8 @@ public class SWBUserScriptEngine implements SWBScriptEngine
      *
      */
     @Override
-    public void chechUpdates() {
-        engine.chechUpdates();
+    public boolean chechUpdates() {
+        return engine.chechUpdates();
     }
 
     /**

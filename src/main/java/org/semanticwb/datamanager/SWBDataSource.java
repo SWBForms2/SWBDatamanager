@@ -515,6 +515,53 @@ public class SWBDataSource
     }
     
     /**
+     * 
+     * @param prop
+     * @param value
+     * @return
+     * @throws IOException 
+     */
+    public DataObject fetchObjByProp(String prop, Object value) throws IOException
+    {
+        DataObject ret=null;
+        DataObject req=new DataObject();
+        DataObject data=new DataObject();
+        data.put(prop, value);
+        req.put("data", data);
+
+        DataObject r=(DataObject)fetch(req);
+        if(r!=null)
+        {
+            DataObject res=(DataObject)r.get("response");       
+            if(res!=null)
+            {
+                Object s=res.get("data");
+                if(s instanceof DataList)
+                {
+                    DataList rdata=(DataList)s;
+                    if(rdata!=null && rdata.size()>0)
+                    {
+                        ret=(DataObject)rdata.get(0);
+                    }
+                }else
+                {
+                    System.out.println("error:"+s);
+                }
+            }            
+        }
+        return ret;
+    }    
+    
+    public DataObject fetchObjByProp(String prop, Object value, DataObject def) throws IOException
+    {
+        DataObject ret = fetchObjByProp(prop, value);
+        if (ret != null) {
+            return ret;
+        }
+        return def;
+    }     
+    
+    /**
      * Regresa Objecto de cache NumID y si no lo tiene lo carga, de lo contrario regresa el valor por default
      * @param id
      * @return 
@@ -1239,6 +1286,26 @@ public class SWBDataSource
 
     public String getDataStoreName() {
         return dataStoreName;
-    }        
+    }    
+
+    /**
+     * Create an Index if not exist
+     * @param name
+     * @param index
+     * @return 
+     */
+    public boolean createIndex(String name, DataObject index) throws IOException
+    {        
+        return db.createIndex(name, index, this);
+    } 
     
+    /**
+     * Remove the Index
+     * @param name
+     * @throws IOException 
+     */
+    public void dropIndex(String name) throws IOException
+    {
+        db.dropIndex(name, this);
+    }
 }

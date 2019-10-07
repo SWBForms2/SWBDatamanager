@@ -80,4 +80,23 @@ public interface SWBDataStore
      * returns true if the datastore is created and persist in the database
      */
     public boolean existModel(String modelid);
+    
+    
+    /**
+     * Create an index if not exist
+     * @param name
+     * @param index
+     * @param dataSource
+     * @return true if the index was created or false if the index exist
+     * @throws IOException 
+     */
+    public boolean createIndex(String name, DataObject index, SWBDataSource dataSource) throws IOException;
+    
+    /**
+     * Remove an Index of the datasource
+     * @param name the name of the index
+     * @param dataSource
+     * @throws IOException 
+     */
+    public void dropIndex(String name, SWBDataSource dataSource) throws IOException;
 }

@@ -2,13 +2,14 @@
 
 var eng = {    
     dataStores:{},                      //DataStores
-    dataSources: {},                    //Datasources
+    dataSources:{},                     //DataSources
+    dataSourceIndexes:{},               //DataSourceIndexes
     fieldProcesors:{},                  //Procesadores de field elements
     validators:{},                      //Validator templates
     dataServices:{},                    //Servicios
     dataProcessors:{},                  //DataProcessors
     dataExtractors:{},                  //DataExtractors
-    fileSources: {},
+    fileSources:{},
     routes:{},
     _requires:[],
     isServerSide:true,
