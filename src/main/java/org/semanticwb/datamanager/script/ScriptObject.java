@@ -25,6 +25,7 @@ import org.semanticwb.datamanager.SWBScriptEngine;
 public class ScriptObject 
 {
     private Object _obj;
+    private DataObject cacheData=null;
     
     /**
      *
@@ -153,7 +154,8 @@ public class ScriptObject
      */
     public boolean isArray()
     {
-        return ((ScriptObjectMirror)_obj).isArray();
+        if(isScriptObject())return ((ScriptObjectMirror)_obj).isArray();
+        return false;
     }     
     
     /**
@@ -162,7 +164,8 @@ public class ScriptObject
      */
     public boolean isEmpty()
     {
-        return ((ScriptObjectMirror)_obj).isEmpty();
+        if(isScriptObject()) return ((ScriptObjectMirror)_obj).isEmpty();
+        return false;
     }     
     
     /**
@@ -171,7 +174,8 @@ public class ScriptObject
      */
     public boolean isFunction()
     {
-        return ((ScriptObjectMirror)_obj).isFunction();
+        if(isScriptObject()) return ((ScriptObjectMirror)_obj).isFunction();
+        return false;
     }     
     
     /**
@@ -299,4 +303,18 @@ public class ScriptObject
         return DataUtils.toData(_obj);
     }
     
+    public DataObject getCacheData()
+    {
+        if(cacheData==null)
+        {
+            synchronized(this)
+            {
+                if(cacheData==null)
+                {
+                    cacheData=new DataObject();
+                }
+            }
+        }
+        return cacheData;
+    }    
 }

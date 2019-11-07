@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import org.semanticwb.datamanager.datastore.DataStoreMongo;
 
 /**
@@ -24,10 +25,15 @@ import org.semanticwb.datamanager.datastore.DataStoreMongo;
  */
 public class DataObject extends LinkedHashMap<String, Object> 
 {
-    private static SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");    
     private static SimpleDateFormat iso_base = new SimpleDateFormat("yyyy-MM-dd");
     private static DecimalFormat decimal_format = new DecimalFormat( "#,##0.00;(#,##0.00)" );    
     public static final DataObject EMPTY=new DataObject();
+    
+    static{
+        iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+        iso_base.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
 
     @Override
     public Object put(String key, Object value) {
@@ -70,8 +76,15 @@ public class DataObject extends LinkedHashMap<String, Object>
         Object obj = get(key);
         if(obj==null)
         {
-            obj=new DataObject();
-            put(key, obj);
+            synchronized(this)
+            {
+                obj = get(key);
+                if(obj==null)
+                {
+                    obj=new DataObject();
+                    put(key, obj);
+                }
+            }
             return (DataObject)obj;
         }else if (obj instanceof DataObject) {
             return (DataObject) obj;
@@ -116,8 +129,15 @@ public class DataObject extends LinkedHashMap<String, Object>
         Object obj = get(key);
         if(obj==null)
         {
-            obj=new DataList();
-            put(key, obj);
+            synchronized(this)
+            {
+                obj = get(key);
+                if(obj==null)
+                {
+                    obj=new DataList();
+                    put(key, obj);
+                }
+            }
             return (DataList)obj;            
         }
         if (obj instanceof DataList) {

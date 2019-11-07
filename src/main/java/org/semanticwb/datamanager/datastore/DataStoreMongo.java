@@ -150,10 +150,10 @@ public class DataStoreMongo implements SWBDataStore
                             {
                                 if("substring".equals(textMatchStyle))
                                 {
-                                    data.put(key, new BasicDBObject().append("$regex",val));
+                                    data.put(key, new BasicDBObject().append("$regex",val).append("$options", "i"));
                                 }else if("startsWith".equals(textMatchStyle))
                                 {
-                                    data.put(key, new BasicDBObject().append("$regex","^"+val));
+                                    data.put(key, new BasicDBObject().append("$regex","^"+val).append("$options", "i"));
                                 }
                             }
                         }else if(val instanceof BasicDBList)

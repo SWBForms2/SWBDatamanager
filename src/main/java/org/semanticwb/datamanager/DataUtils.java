@@ -16,6 +16,7 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -159,13 +160,23 @@ public class DataUtils {
      * @param value
      * @return
      */
-    public static ScriptObject getArrayNode(ScriptObject arr, String prop, String value) {
+    public static ScriptObject getArrayNode(ScriptObject arr, String prop, String... value) {
         if (arr != null) {
             Iterator<ScriptObject> it1 = arr.values().iterator();
             while (it1.hasNext()) {
-                ScriptObject obj = it1.next();
-                String val = obj.getString(prop);
-                if (val != null && val.equals(value)) {
+                ScriptObject obj = it1.next();                
+                ScriptObject val=obj.get(prop);
+                //System.out.println("obj:"+obj.toData()+" val:"+(val!=null?val.getValue():null));
+                if(val!=null && val.isArray())
+                {
+                    if(getArrayNode(val,value[0],Arrays.copyOfRange(value, 1, value.length)).size()>0)
+                    {
+                        return obj;                        
+                    }
+                }
+                else if (val != null && val.getValue().toString().equals(value[0])) 
+                {
+                    //System.out.println("val:"+val.getValue());
                     return obj;
                 }
             }
@@ -180,20 +191,31 @@ public class DataUtils {
      * @param value
      * @return
      */
-    public static ArrayList<ScriptObject> getArrayNodes(ScriptObject arr, String prop, String value) {
+    public static ArrayList<ScriptObject> getArrayNodes(ScriptObject arr, String prop, String... value) 
+    {
         ArrayList<ScriptObject> ret=new ArrayList();
         if (arr != null) {
             Iterator<ScriptObject> it1 = arr.values().iterator();
             while (it1.hasNext()) {
                 ScriptObject obj = it1.next();
-                String val = obj.getString(prop);
-                if (val != null && val.equals(value)) {
+                ScriptObject val=obj.get(prop);
+                //System.out.println("obj:"+obj.toData()+" val:"+(val!=null?val.getValue():null));
+                if(val!=null && val.isArray())
+                {
+                    if(getArrayNodes(val,value[0],Arrays.copyOfRange(value, 1, value.length)).size()>0)
+                    {
+                        ret.add(obj);                        
+                    }
+                }
+                else if (val != null && val.getValue().toString().equals(value[0])) 
+                {
+                    //System.out.println("val:"+val.getValue());
                     ret.add(obj);
                 }
             }
         }
         return ret;
-    }    
+    }  
 
     /**
      *

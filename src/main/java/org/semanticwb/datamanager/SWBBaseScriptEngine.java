@@ -183,7 +183,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             //Load DataSources
             HashMap<String,ScriptObject> dataSources=new HashMap();
             {
-                ScriptObject dss=eng.get("dataSources");   
+                ScriptObject dss=eng.get("dataSources");
                 Iterator<String> it=dss.keySet().iterator();
                 while (it.hasNext()) {
                     String dsname = it.next();
@@ -468,13 +468,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      */
     @Override
     public SWBDataSource getDataSource(String name)
-    {
-        ScriptObject so=getDataSourceScript(name);
-        if(so!=null)
-        {
-            return new SWBDataSource(name,null,so,this);
-        }
-        return null;
+    {        
+        return getDataSource(name,null);
     }
     
     /**

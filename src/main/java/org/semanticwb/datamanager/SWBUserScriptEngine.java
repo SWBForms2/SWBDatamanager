@@ -100,13 +100,8 @@ public class SWBUserScriptEngine implements SWBScriptEngine
      */
     @Override
     public SWBDataSource getDataSource(String name)
-    {
-        ScriptObject so=engine.getDataSourceScript(name);
-        if(so!=null)
-        {
-            return new SWBDataSource(name,null,so,this);
-        }
-        return null;
+    {        
+        return getDataSource(name, null);
     }
     
     /**

@@ -6,6 +6,7 @@ package org.semanticwb.datamanager;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -77,10 +78,10 @@ public class SWBDataSource
     private SWBDataStore db=null;
     private String modelid=null;
     
-    private HashMap<String,DataObject> cache=new HashMap();    
-    private HashMap<String,ArrayList<ScriptObject>> scriptFields=new HashMap();    
+    private DataObject cache=null;
+    private DataObject scriptFields=null; 
     
-    private HashMap<String,String> removeDependenceFields=null;
+    private DataObject removeDependenceFields=null;
         
     /**
      *
@@ -98,6 +99,11 @@ public class SWBDataSource
         dataStoreName=this.script.getString("dataStore");
         this.db=engine.getDataStore(dataStoreName);        
         if(this.db==null)throw new NoSuchFieldError("DataStore not found:"+dataStoreName);
+        
+        cache=script.getCacheData().getOrCreateDataObject("cache");
+        scriptFields=script.getCacheData().getOrCreateDataObject("scriptFields");
+        removeDependenceFields=script.getCacheData().getDataObject("removeDependenceFields");
+        //System.out.println("Create DataSource: "+name+"->"+engine);
     }
 
     /**
@@ -605,18 +611,19 @@ public class SWBDataSource
      */
     public DataObject getObjectById(String id)
     {
-        DataObject obj=cache.get(id);
+        DataObject obj=cache.getDataObject(id);
         if(obj==null)
         {
             synchronized(cache)
             {
-                obj=cache.get(id);
+                obj=cache.getDataObject(id);
                 if(obj==null)
                 {
                     try
                     {
                         obj=fetchObjById(id);
                         cache.put(id, obj);
+                        //System.out.println("Add Obj to cache:"+id);
                     }catch(IOException e)
                     {
                         e.printStackTrace();
@@ -770,13 +777,14 @@ public class SWBDataSource
     public HashMap getRemoveDependenceFields()
     {
         if(removeDependenceFields==null)
-        {
+        {            
             synchronized(this)
             {
                 if(removeDependenceFields==null)
                 {
                     System.out.println("Loading removeDependence "+getName());
-                    removeDependenceFields=new HashMap();
+                    removeDependenceFields=new DataObject();
+                    script.getCacheData().addParam("removeDependenceFields",removeDependenceFields);
                     ScriptObject fields=script.get("fields");
                     if(fields!=null)
                     {
@@ -963,6 +971,9 @@ public class SWBDataSource
                         {
                             ScriptObject validator = it2.next();
                             String type=validator.getString("type");
+                            String stype=validator.getString("stype");
+                            
+                            System.out.println("type:"+type);
 
                             if("serverCustom".equals(type))
                             {
@@ -981,7 +992,9 @@ public class SWBDataSource
                                         errors.put(key, errmsg);
                                     }
                                 }
-                            }else if("isUnique".equals(type))
+                            }
+/*                            
+                            else if("isUnique".equals(type) || "unique".equals(stype))
                             {
                                 String id=(String)data.get("_id");
                                 DataObject req=new DataObject();
@@ -1002,6 +1015,7 @@ public class SWBDataSource
                                 }                                
                                 //System.out.println("isUnique:"+key+"->"+value+" "+id+" "+r);
                             }
+*/                            
                         }
                     }
                 }
@@ -1066,19 +1080,20 @@ public class SWBDataSource
      * @param value
      * @return ArrayList with fields
      */
-    public ArrayList<ScriptObject> findScriptFields(String prop, String value)
+    public ArrayList<ScriptObject> findScriptFields(String prop, String... value)
     {
-        ArrayList<ScriptObject> ret=scriptFields.get(prop+"-"+value);
+        ArrayList<ScriptObject> ret=(ArrayList<ScriptObject>)scriptFields.get(prop+"-"+Arrays.toString(value));
         if(ret==null)
         {
             synchronized(this)
             {
-                ret=scriptFields.get(prop+"-"+value);
+                ret=(ArrayList<ScriptObject>)scriptFields.get(prop+"-"+Arrays.toString(value));
                 if(ret==null)
                 {
+                    //System.out.println("findScriptFields:"+prop+"-"+Arrays.toString(value));
                     ret=DataUtils.getArrayNodes(script.get("fields"), prop, value);
                     ret.addAll(DataUtils.getArrayNodes(script.get("links"), prop, value));   
-                    scriptFields.put(prop+"-"+value, ret);
+                    scriptFields.put(prop+"-"+Arrays.toString(value), ret);
                 }
             }
         }
