@@ -8,6 +8,7 @@ var eng = {
     validators:{},                      //Validator templates
     dataServices:{},                    //Servicios
     dataProcessors:{},                  //DataProcessors
+    formProcessors:{},                  //FormProcessors
     dataExtractors:{},                  //DataExtractors
     fileSources:{},
     routes:{},

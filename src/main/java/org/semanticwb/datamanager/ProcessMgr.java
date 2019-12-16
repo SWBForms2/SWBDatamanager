@@ -223,7 +223,7 @@ public class ProcessMgr {
                     for(String numid:resources)
                     {
                         transitionsTimers.put(trans.getNumId()+"-"+numid, trans);
-                        System.out.println("transitionsTimers:"+trans.getNumId()+"-"+numid);
+                        //System.out.println("transitionsTimers:"+trans.getNumId()+"-"+numid);
                     }                
                 }
             }                        

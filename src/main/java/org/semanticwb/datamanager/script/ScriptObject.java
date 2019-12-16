@@ -55,8 +55,20 @@ public class ScriptObject
      */
     public String getString(String key)
     {
+        return getString(key, null);
+    }    
+    
+    
+    /**
+     *
+     * @param key
+     * @param def
+     * @return
+     */
+    public String getString(String key, String def)
+    {
         Object o=((ScriptObjectMirror)_obj).get(key);
-        if(o==null)return null;
+        if(o==null)return def;
         return o.toString();
     }
     
@@ -67,10 +79,21 @@ public class ScriptObject
      */
     public int getInt(String key)
     {
-        Object o=((ScriptObjectMirror)_obj).get(key);
-        if(o==null)return 0;
-        return (Integer)o;
+        return getInt(key, 0);
     }    
+    
+    /**
+     * 
+     * @param key
+     * @param def
+     * @return 
+     */
+    public int getInt(String key, int def)
+    {
+        Object o=((ScriptObjectMirror)_obj).get(key);
+        if(o==null)return def;
+        return (Integer)o;
+    }      
     
     /**
      *

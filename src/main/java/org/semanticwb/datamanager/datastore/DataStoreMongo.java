@@ -34,8 +34,8 @@ import org.semanticwb.datamanager.script.ScriptObject;
 public class DataStoreMongo implements SWBDataStore
 {
     static private Logger log = Logger.getLogger(DataStoreMongo.class.getName());
-    private MongoClient mongoClient=null;
-    ScriptObject dataStore=null;
+    protected MongoClient mongoClient=null;
+    protected ScriptObject dataStore=null;
         
     /**
      *
@@ -54,7 +54,7 @@ public class DataStoreMongo implements SWBDataStore
         }
     }
     
-    private void initDB() throws IOException
+    protected void initDB() throws IOException
     {
         if(mongoClient==null)
         {
@@ -728,11 +728,11 @@ public class DataStoreMongo implements SWBDataStore
             
             if(create)
             {
-                System.out.println("createIndex:"+name+"->"+index);
+                //System.out.println("createIndex:"+name+"->"+index);
                 coll.createIndex(json, name);
             }else
             {
-                System.out.println("findIndex:"+name+"->"+index);
+                //System.out.println("findIndex:"+name+"->"+index);
             }
         }finally
         {
@@ -749,7 +749,7 @@ public class DataStoreMongo implements SWBDataStore
             String scls=dataSource.getClassName();
             DB db = mongoClient.getDB(modelid);
             DBCollection coll = db.getCollection(scls);            
-            System.out.println("dropIndex:"+name);
+            //System.out.println("dropIndex:"+name);
             coll.dropIndex(name);      
         }finally
         {

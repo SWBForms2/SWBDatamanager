@@ -48,6 +48,15 @@ public interface SWBScriptEngine
      * @throws ScriptException
      */
     public Object eval(String script) throws ScriptException;
+    
+    /**
+     * 
+     * @param script
+     * @param bind
+     * @return
+     * @throws ScriptException 
+     */
+    public Object eval(String script, Bindings bind) throws ScriptException;
 
     /**
      *
@@ -56,6 +65,15 @@ public interface SWBScriptEngine
      * @throws ScriptException
      */
     public Object eval(Reader script) throws ScriptException;
+    
+    /**
+     * 
+     * @param script
+     * @param bind
+     * @return
+     * @throws ScriptException 
+     */
+    public Object eval(Reader script, Bindings bind) throws ScriptException;
 
     /**
      * Busca los objetos SWBDataProcessor relacionados a un especifico DataSource y una accion
@@ -64,6 +82,14 @@ public interface SWBScriptEngine
      * @return Lista de SWBDataProcessor o null si no hay SWBDataService relacionados
      */
     public Set<SWBDataProcessor> findDataProcessors(String dataSource, String action);
+    
+    /**
+     * Busca los objetos SWBFormProcessor relacionados a un especifico DataSource y una accion
+     * @param dataSource
+     * @param action
+     * @return Lista de SWBDataProcessor o null si no hay SWBDataService relacionados
+     */
+    public Set<SWBFormProcessor> findFormProcessors(String dataSource, String action);
 
     /**
      * Busca los objetos SWBDataService relacionados a un especifico DataSource y una accion
@@ -130,6 +156,18 @@ public interface SWBScriptEngine
      * @return 
      */
     public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams);
+    
+    /**
+     * 
+     * @param dataSource
+     * @param action
+     * @param method
+     * @param obj
+     * @param trxParams - Transaction Params
+     * @return 
+     */
+    public DataObject invokeFormProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams);
+    
 
     /**
      *

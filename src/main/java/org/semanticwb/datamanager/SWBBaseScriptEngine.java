@@ -42,7 +42,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     
 //    private final HashMap<SWBUser, Bindings> users=new HashMap();    
     private HashMap<String,ScriptObject> dataSources=null;
-    private HashMap<String,SWBDataStore> dataStores=null;
+    private HashMap<String,ScriptObject> dataStores=null;
+    private HashMap<String,SWBDataStore> dataStoresCache=null;
     
     private HashMap<String, SWBFileSource> fileSources=null;
     
@@ -50,6 +51,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
         
     private HashMap<String,Set<SWBDataService>> dataServices=null;
     private HashMap<String,Set<SWBDataProcessor>> dataProcessors=null;
+    private HashMap<String,Set<SWBFormProcessor>> formProcessors=null;
     
     private DataObject data=new DataObject();
     
@@ -162,21 +164,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             RoutesMgr.parseRouter(ros);
               
             //Load DataStores
-            HashMap<String,SWBDataStore> dataStores=new HashMap();          
+            HashMap<String,ScriptObject> dataStores=new HashMap();          
             {
                 ScriptObject dss=eng.get("dataStores");   
                 Iterator<String> it=dss.keySet().iterator();
                 while (it.hasNext()) {
                     String dsname = it.next();
+                    logger.log(Level.INFO,"Loading DataStore:"+dsname);                    
                     ScriptObject dataStore=dss.get(dsname);
-                    String dataStoreClass=dataStore.getString("class");
-                    try
-                    {
-                        Class cls=Class.forName(dataStoreClass);
-                        Constructor c=cls.getConstructor(ScriptObject.class);
-                        logger.log(Level.INFO,"Loading DataStore:"+dsname);
-                        dataStores.put(dsname,(SWBDataStore)c.newInstance(dataStore));
-                    }catch(Exception e){e.printStackTrace();}        
+                    dataStores.put(dsname, dataStore);
                 }
             }            
             
@@ -243,6 +239,60 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                                 arr.add(dataProcessor);
                             }                            
 
+                        }
+                    }
+                }
+            }
+
+            //Load FormProcessors
+            HashMap<String,Set<SWBFormProcessor>> formProcessors=new HashMap();          
+            {
+                ScriptObject dss=eng.get("formProcessors");   
+                Iterator<String> it=dss.keySet().iterator();
+                while(it.hasNext())
+                {
+                    String key=it.next();
+                    ScriptObject data=dss.get(key);
+                    logger.log(Level.INFO,"Loading FormProcessor:"+key);
+                    SWBFormProcessor formProcessor=new SWBFormProcessor(key,data);
+                    
+                    Iterator<ScriptObject> dsit=data.get("dataSources").values().iterator();
+                    while (dsit.hasNext()) 
+                    {
+                        ScriptObject dsname = dsit.next();
+                        Iterator<ScriptObject> acit=data.get("actions").values().iterator();
+                        while (acit.hasNext()) 
+                        {
+                            String action = acit.next().getValue().toString();
+                            String name=dsname.getValue().toString();
+                            
+                            if(name.equals("*"))
+                            {
+                                Iterator<String> itds=dataSources.keySet().iterator();
+                                while (itds.hasNext()) 
+                                {
+                                    name = itds.next();
+                                    String k=name+"-"+action;
+                                    Set<SWBFormProcessor> arr=formProcessors.get(k);
+                                    if(arr==null)
+                                    {
+                                        arr=new TreeSet();
+                                        formProcessors.put(k, arr);
+                                    }
+                                    arr.add(formProcessor);
+                                }
+                                
+                            }else
+                            {
+                                String k=name+"-"+action;
+                                Set<SWBFormProcessor> arr=formProcessors.get(k);
+                                if(arr==null)
+                                {
+                                    arr=new TreeSet();
+                                    formProcessors.put(k, arr);
+                                }
+                                arr.add(formProcessor);
+                            }                            
                         }
                     }
                 }
@@ -362,8 +412,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             this.sobject=eng;      
             this.sengine=engine;
             this.dataStores=dataStores;              
+            this.dataStoresCache=new HashMap();              
             this.dataSources=dataSources;     
             this.dataProcessors=dataProcessors;  
+            this.formProcessors=formProcessors;  
             this.dataServices=dataServices;   
             this.dataExtractors=dataExtractors;
             this.fileSources=fileSources;
@@ -497,7 +549,28 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     @Override
     public SWBDataStore getDataStore(String name)
     {
-        return dataStores.get(name);
+        SWBDataStore dataStoreInst=dataStoresCache.get(name);
+        if(dataStoreInst==null)
+        {
+            synchronized(this)
+            {
+                dataStoreInst=dataStoresCache.get(name);
+                if(dataStoreInst==null)                
+                {
+                    ScriptObject dataStore=dataStores.get(name);
+                    String dataStoreClass=dataStore.getString("class");
+                    try
+                    {
+                        Class cls=Class.forName(dataStoreClass);
+                        Constructor c=cls.getConstructor(ScriptObject.class);
+                        logger.log(Level.INFO,"Create DataStore:"+name);
+                        dataStoreInst=(SWBDataStore)c.newInstance(dataStore);
+                        dataStoresCache.put(name,dataStoreInst);
+                    }catch(Exception e){e.printStackTrace();}                
+                }
+            }
+        }        
+        return dataStoreInst;
     }    
 
     /**
@@ -583,6 +656,19 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     {
         return dataProcessors.get(dataSource+"-"+action);
     }   
+    
+    /**
+     * Busca los objetos SWBFormProcessor relacionados a un especifico DataSource y una accion 
+     * @param dataSource
+     * @param action
+     * @return Lista de SWBDataProcessor o null si no hay SWBDataService relacionados
+     */
+    
+    @Override
+    public Set<SWBFormProcessor> findFormProcessors(String dataSource, String action)
+    {
+        return formProcessors.get(dataSource+"-"+action);
+    }     
 
     /**
      *
@@ -647,6 +733,70 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
         }
         return obj;
     }
+    
+    /**
+     *
+     * @param dataSource
+     * @param action
+     * @param method
+     * @param obj
+     * @return
+     */
+    @Override
+    public DataObject invokeFormProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams)
+    {
+        return invokeFormProcessors(this, dataSource, action, method, obj, trxParams);
+    }
+    
+    /**
+     *
+     * @param userengine
+     * @param dataSource
+     * @param action
+     * @param method
+     * @param obj
+     * @return
+     */
+    protected DataObject invokeFormProcessors(SWBScriptEngine userengine, String dataSource, String action, String method, DataObject obj, DataObject trxParams)
+    {
+        if(disabledDataTransforms)return obj;
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
+        
+        Set<SWBFormProcessor> set=findFormProcessors(dataSource, action);
+        if(set!=null)
+        {
+            Iterator<SWBFormProcessor> dsit=set.iterator();
+            while(dsit.hasNext())
+            {
+                SWBFormProcessor dsrv=dsit.next();
+                ScriptObject func=dsrv.getFormProcessorScript().get(method);
+                //System.out.println("func:"+func);
+                if(func!=null && func.isFunction())
+                {
+                    try
+                    {
+                        ScriptObject r=func.invoke(userengine,obj,dataSource,action,trxParams);
+                        if(r!=null && r.getValue() instanceof DataObject)
+                        {
+                            obj=(DataObject)r.getValue();
+                        }
+                    }catch(jdk.nashorn.internal.runtime.ECMAException ecma)
+                    {
+                        if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
+                        throw ecma;
+                    }catch(Throwable e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }            
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
+        }else
+        {
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
+        }
+        return obj;
+    }    
     
     /**
      *
@@ -735,7 +885,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @return
      * @throws ScriptException
      */
-    protected Object eval(String script, Bindings bind) throws ScriptException
+    @Override
+    public Object eval(String script, Bindings bind) throws ScriptException
     {
         return sengine.eval(script, bind);
     }
@@ -759,7 +910,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @return
      * @throws ScriptException
      */
-    protected Object eval(Reader script, Bindings bind) throws ScriptException
+    @Override
+    public Object eval(Reader script, Bindings bind) throws ScriptException
     {
         return sengine.eval(script,bind);
     }        

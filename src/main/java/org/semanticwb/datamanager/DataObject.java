@@ -32,7 +32,7 @@ public class DataObject extends LinkedHashMap<String, Object>
     
     static{
         iso.setTimeZone(TimeZone.getTimeZone("UTC"));
-        iso_base.setTimeZone(TimeZone.getTimeZone("UTC"));
+        //iso_base.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     @Override
@@ -425,12 +425,12 @@ public class DataObject extends LinkedHashMap<String, Object>
         }if(obj instanceof String)
         {
             String txt=(String)obj;
-            if(txt.length()==24)
+            if(txt.length()>10)
             {
                 try{return iso.parse(txt);}catch(ParseException e){}
             }else
             {
-                try{return iso.parse(txt);}catch(ParseException e){}
+                try{return iso_base.parse(txt);}catch(ParseException e){}
             }
             
         }

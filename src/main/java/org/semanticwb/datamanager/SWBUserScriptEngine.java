@@ -72,6 +72,11 @@ public class SWBUserScriptEngine implements SWBScriptEngine
         return engine.eval(script,engine.getUserBindings(this));
     }
 
+    @Override
+    public Object eval(Reader script, Bindings bind) throws ScriptException {
+        return engine.eval(script,bind);
+    }
+    
     /**
      *
      * @param script
@@ -84,9 +89,19 @@ public class SWBUserScriptEngine implements SWBScriptEngine
     }
 
     @Override
+    public Object eval(String script, Bindings bind) throws ScriptException {
+        return engine.eval(script,bind);  
+    }
+    
+    @Override
     public Set<SWBDataProcessor> findDataProcessors(String dataSource, String action) {
         return engine.findDataProcessors(dataSource, action);
     }
+    
+    @Override
+    public Set<SWBFormProcessor> findFormProcessors(String dataSource, String action) {
+        return engine.findFormProcessors(dataSource, action);
+    }    
 
     @Override
     public Set<SWBDataService> findDataServices(String dataSource, String action) {
@@ -152,11 +167,23 @@ public class SWBUserScriptEngine implements SWBScriptEngine
      * @param obj
      * @return
      */
-
     @Override
     public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams) {
         return engine.invokeDataProcessors(this,dataSource, action, method, obj,trxParams);
     }
+    
+    /**
+     *
+     * @param dataSource
+     * @param action
+     * @param method
+     * @param obj
+     * @return
+     */
+    @Override
+    public DataObject invokeFormProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams) {
+        return engine.invokeFormProcessors(this,dataSource, action, method, obj,trxParams);
+    }    
 
     /**
      *
@@ -393,14 +420,14 @@ public class SWBUserScriptEngine implements SWBScriptEngine
                     {        
                         permissions=DataUtils.mapDataSourceByFields(getDataSource("Permission"), "name","roles");        
                         session.setAttribute("_PERMISSIONS_",permissions);        
-                        System.out.println("permissions session:"+permissions);
+                        //System.out.println("permissions session:"+permissions);
                     }
                 }
             }
         }else
         {
             permissions=DataUtils.mapDataSourceByFields(getDataSource("Permission"), "name","roles");    
-            System.out.println("permissions:"+permissions);
+            //System.out.println("permissions:"+permissions);
         }
         return permissions;
     }

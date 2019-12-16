@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.script.ScriptEngine;
@@ -40,7 +41,13 @@ public class DataMgr
     
     private static java.util.HashMap<String, Object> appContext=null;
     
+    private static ArrayList<StopNotification> stopNotification=new ArrayList();
     
+    /**
+     * Initialize de web application
+     * @param applicationPath
+     * @param contextPath 
+     */
     private DataMgr(String applicationPath, String contextPath)
     {
         this(applicationPath);
@@ -328,5 +335,24 @@ public class DataMgr
         appContext.remove(key);
     }
     
+    /**
+     * Called when stop the web application
+     */
+    public static void stopInstance()
+    {
+        for(StopNotification stop:stopNotification)
+        {
+            stop.stop();
+        }
+    }        
     
+    public static void subscribeStopNotification(StopNotification stop)
+    {
+        stopNotification.add(stop);
+    }
+    
+    public interface StopNotification
+    {
+        public void stop();
+    }
 }

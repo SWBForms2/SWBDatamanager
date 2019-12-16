@@ -65,6 +65,16 @@ public class SWBDataSource
      *
      */
     public static final String ACTION_USER="user";
+    
+    /**
+     * Form Init
+     */
+    public static final String ACTION_INIT="init";
+
+    /**
+     * Form Change
+     */
+    public static final String ACTION_CHANGE="change";    
 
     /**
      *
@@ -925,6 +935,8 @@ public class SWBDataSource
         return remove(DataUtils.toDataObject(json));
     }
     
+    
+    
 //    public DataObject validate(String query) throws IOException
 //    {
 //        return validate((DataObject)JSON.parse(query));
@@ -973,7 +985,7 @@ public class SWBDataSource
                             String type=validator.getString("type");
                             String stype=validator.getString("stype");
                             
-                            System.out.println("type:"+type);
+                            //System.out.println("type:"+type);
 
                             if("serverCustom".equals(type))
                             {
