@@ -708,6 +708,7 @@ public class DataStoreMongo implements SWBDataStore
             //System.out.println("name:"+name);
             //System.out.println("index:"+index);
             
+            //Serch for existence or changes
             List<DBObject> list=coll.getIndexInfo();
             Iterator<DBObject> it=list.iterator();
             while (it.hasNext()) {
